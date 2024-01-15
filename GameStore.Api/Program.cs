@@ -1,5 +1,7 @@
 using GameStore.Api.Entities;
 
+const string GetGameEndpointName = "GetGame";
+
 List<Game> games = new()
 {
     new Game() {Id =1 , Name= "Street Fighter II", Genre ="Fighting", Price = 19.99M, ReleaseDate = new DateTime(1991,2,1), ImageUri = "https://placehold.co/100"},
@@ -11,6 +13,25 @@ List<Game> games = new()
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
-app.MapGet("/", () => "Hello World!");
+app.MapGet("/games", () => games);
+app.MapGet("/games/{id}", (int id) =>
+{
+    Game? game = games.Find(game => game.Id == id);
+
+    if(game == null)
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok(game);
+}).WithName(GetGameEndpointName);
+
+app.MapPost("/games", (Game game) =>
+{
+    game.Id = games.Max(games => game.Id) + 1;
+    games.Add(game);
+
+    return Results.CreatedAtRoute(GetGameEndpointName, new { id = game.Id }, game);
+});
 
 app.Run();
