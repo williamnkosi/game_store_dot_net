@@ -13,8 +13,10 @@ List<Game> games = new()
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
-app.MapGet("/games", () => games);
-app.MapGet("/games/{id}", (int id) =>
+var group = app.MapGroup("/games");
+
+group.MapGet("/", () => games);
+group.MapGet("/{id}", (int id) =>
 {
     Game? game = games.Find(game => game.Id == id);
 
@@ -26,12 +28,40 @@ app.MapGet("/games/{id}", (int id) =>
     return Results.Ok(game);
 }).WithName(GetGameEndpointName);
 
-app.MapPost("/games", (Game game) =>
+group.MapPost("/", (Game game) =>
 {
-    game.Id = games.Max(games => game.Id) + 1;
+    game.Id = games.Max(game => game.Id) + 1;
     games.Add(game);
 
     return Results.CreatedAtRoute(GetGameEndpointName, new { id = game.Id }, game);
+});
+
+group.MapPut("/{id}", (int id, Game updatedGame) => {
+    Game? existingGame = games.Find(game => game.Id == id);
+
+    if (existingGame == null)
+    {
+        return Results.NotFound();
+    }
+    existingGame.Name = updatedGame.Name;
+    existingGame.Genre = updatedGame.Genre;
+    existingGame.Price = updatedGame.Price; 
+    existingGame.ReleaseDate = updatedGame.ReleaseDate;
+    existingGame.ImageUri = updatedGame.ImageUri;
+
+    return Results.NoContent();
+});
+
+app.MapDelete("/{id}", (int id) =>
+{
+    Game? existingGame = games.Find(game => game.Id == id);
+
+    if (existingGame is not null)
+    {
+        games.Remove(existingGame);
+   
+    }
+    return Results.NoContent();
 });
 
 app.Run();
